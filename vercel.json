@@ -1,0 +1,21 @@
+{
+    "buildCommand": "npm run build",
+    "devCommand": "npm run dev",
+    "installCommand": "npm install",
+    "framework": "nextjs",
+    "outputDirectory": ".next",
+    "regions": [
+        "iad1"
+    ],
+    "env": {
+        "DATABASE_URL": "@database_url",
+        "NEXTAUTH_SECRET": "@nextauth_secret",
+        "NEXTAUTH_URL": "@nextauth_url",
+        "STRIPE_SECRET_KEY": "@stripe_secret_key",
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@next_public_stripe_publishable_key",
+        "NEXT_PUBLIC_PEERJS_HOST": "0.peerjs.com",
+        "NEXT_PUBLIC_PEERJS_PORT": "443",
+        "NEXT_PUBLIC_PEERJS_PATH": "/",
+        "NEXT_PUBLIC_PEERJS_SECURE": "true"
+    }
+}

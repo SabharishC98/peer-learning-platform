@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  bio           String?
+  points        Int       @default(100)
+  faceHash      String?   @unique // Simulated biometric hash
+  avatar        String?
+  timezone      String    @default("UTC")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  skills                Skill[]
+  sessionsAsTeacher     Session[]         @relation("TeacherSessions")
+  sessionsAsStudent     Session[]         @relation("StudentSessions")
+  testSubmissions       TestSubmission[]
+  transactions          Transaction[]
+  matchingProfile       MatchingProfile?
+  notifications         Notification[]
+  sentMessages          Message[]         @relation("SentMessages")
+}
+
+model Skill {
+  id              String           @id @default(uuid())
+  name            String
+  verified        Boolean          @default(false)
+  verifiedAt      DateTime?
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testSubmissions TestSubmission[]
+  
+  @@index([userId])
+}
+
+model TestSubmission {
+  id              String   @id @default(uuid())
+  skillId         String
+  userId          String
+  testType        String   // "CODING" or "MCQ"
+  answers         String   // JSON string of answers
+  score           Int
+  passed          Boolean
+  plagiarismScore Float    @default(0.0) // 0.0 = no plagiarism, 1.0 = 100% plagiarism
+  createdAt       DateTime @default(now())
+  
+  skill           Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([skillId])
+}
+
+model Session {
+  id              String          @id @default(uuid())
+  teacherId       String
+  studentId       String
+  skillName       String
+  scheduledTime   DateTime
+  startTime       DateTime?
+  endTime         DateTime?
+  pointsCost      Int             @default(10)
+  status          String          @default("PENDING") // PENDING, ACTIVE, COMPLETED, CANCELLED
+  rating          Int?            // 1-5 rating from student
+  feedback        String?
+  createdAt       DateTime        @default(now())
+  
+  teacher         User            @relation("TeacherSessions", fields: [teacherId], references: [id], onDelete: Cascade)
+  student         User            @relation("StudentSessions", fields: [studentId], references: [id], onDelete: Cascade)
+  summaries       SessionSummary[]
+  messages        Message[]
+  
+  @@index([teacherId])
+  @@index([studentId])
+  @@index([status])
+}
+
+model SessionSummary {
+  id          String   @id @default(uuid())
+  sessionId   String
+  content     String   // AI-generated summary
+  keyPoints   String   // JSON array of key learning points
+  nextSteps   String?  // Recommended next steps
+  createdAt   DateTime @default(now())
+  
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  sessionId   String
+  senderId    String
+  content     String
+  timestamp   DateTime @default(now())
+  
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // "EARN", "SPEND", "PURCHASE"
+  amount      Int      // Points amount
+  description String
+  sessionId   String?  // Optional reference to session
+  paymentId   String?  // Stripe payment ID for purchases
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([type])
+}
+
+model MatchingProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  learningStyle       String   @default("visual") // visual, auditory, kinesthetic, reading
+  preferredPace       String   @default("medium") // slow, medium, fast
+  availability        String   // JSON string of available time slots
+  preferredLanguages  String   // JSON array of language codes
+  bio                 String?
+  updatedAt           DateTime @updatedAt
+  
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // "SESSION_SCHEDULED", "SESSION_REMINDER", "POINTS_EARNED", etc.
+  title       String
+  message     String
+  read        Boolean  @default(false)
+  link        String?  // Optional link to relevant page
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, read])
+}
