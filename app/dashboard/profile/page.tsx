@@ -13,6 +13,11 @@ export default function ProfilePage() {
         bio: "",
         timezone: "UTC",
     });
+    const [stats, setStats] = useState({
+        verifiedSkills: 0,
+        sessionsTaught: 0,
+        sessionsAttended: 0,
+    });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -23,6 +28,20 @@ export default function ProfilePage() {
                 bio: "",
                 timezone: "UTC",
             });
+
+            // Fetch user stats
+            fetch('/api/profile/stats')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        setStats({
+                            verifiedSkills: data.verifiedSkills || 0,
+                            sessionsTaught: data.sessionsTaught || 0,
+                            sessionsAttended: data.sessionsAttended || 0,
+                        });
+                    }
+                })
+                .catch(err => console.error('Error fetching stats:', err));
         }
     }, [session]);
 
@@ -144,15 +163,15 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-3 gap-4 mt-6">
                     <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
                         <Award className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                        <div className="text-2xl font-bold">0</div>
+                        <div className="text-2xl font-bold">{stats.verifiedSkills}</div>
                         <div className="text-sm text-gray-400">Skills Verified</div>
                     </div>
                     <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
-                        <div className="text-2xl font-bold">0</div>
+                        <div className="text-2xl font-bold">{stats.sessionsTaught}</div>
                         <div className="text-sm text-gray-400">Sessions Taught</div>
                     </div>
                     <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 text-center">
-                        <div className="text-2xl font-bold">0</div>
+                        <div className="text-2xl font-bold">{stats.sessionsAttended}</div>
                         <div className="text-sm text-gray-400">Sessions Attended</div>
                     </div>
                 </div>

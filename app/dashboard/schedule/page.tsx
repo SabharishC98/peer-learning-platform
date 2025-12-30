@@ -1,20 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Calendar as CalendarIcon, Clock, User } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function SchedulePage() {
+    const searchParams = useSearchParams();
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("");
     const [teacherId, setTeacherId] = useState("");
     const [skillName, setSkillName] = useState("");
+    const [teacherName, setTeacherName] = useState("");
     const [minDate, setMinDate] = useState("");
 
     // Set minimum date on client side to avoid hydration mismatch
     useEffect(() => {
         setMinDate(new Date().toISOString().split('T')[0]);
-    }, []);
+
+        // Read URL parameters
+        const teacherParam = searchParams.get('teacher');
+        const skillParam = searchParams.get('skill');
+
+        if (teacherParam) {
+            setTeacherId(teacherParam);
+            // Fetch teacher name
+            fetch(`/api/user/${teacherParam}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.name) {
+                        setTeacherName(data.name);
+                    }
+                })
+                .catch(err => console.error('Error fetching teacher:', err));
+        }
+
+        if (skillParam) {
+            setSkillName(skillParam);
+        }
+    }, [searchParams]);
 
     const handleSchedule = async () => {
         if (!selectedDate || !selectedTime || !teacherId || !skillName) {
@@ -70,26 +94,42 @@ export default function SchedulePage() {
                                 type="text"
                                 value={skillName}
                                 onChange={(e) => setSkillName(e.target.value)}
-                                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                readOnly={!!searchParams.get('skill')}
+                                className={`w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${searchParams.get('skill') ? 'opacity-75 cursor-not-allowed' : ''
+                                    }`}
                                 placeholder="e.g., JavaScript, Python, React"
                             />
+                            {searchParams.get('skill') && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Pre-filled from teacher selection
+                                </p>
+                            )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-2">
                                 <User className="w-4 h-4 inline mr-2" />
-                                Teacher ID
+                                Teacher
                             </label>
-                            <input
-                                type="text"
-                                value={teacherId}
-                                onChange={(e) => setTeacherId(e.target.value)}
-                                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Teacher's user ID"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Find teachers in the "Find Teachers" page
-                            </p>
+                            {teacherName ? (
+                                <div className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white">
+                                    <div className="font-medium">{teacherName}</div>
+                                    <div className="text-xs text-gray-500 mt-1">ID: {teacherId}</div>
+                                </div>
+                            ) : (
+                                <>
+                                    <input
+                                        type="text"
+                                        value={teacherId}
+                                        onChange={(e) => setTeacherId(e.target.value)}
+                                        className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Teacher's user ID"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Find teachers in the "Find Teachers" page
+                                    </p>
+                                </>
+                            )}
                         </div>
 
                         <div>
